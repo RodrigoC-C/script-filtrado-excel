@@ -3,6 +3,7 @@ import os
 import pandas as pd 
 from datetime import datetime as dt
 from dotenv import load_dotenv
+from extraccion import extraccion_herramientas
 
 # Cargamos las variables de entorno
 load_dotenv()
@@ -47,17 +48,8 @@ def escritura_ultimo_registro(nombre_archivo, id_recorrido, fecha_exacta):
     return()
 
 
-# Lectura de casillas y extraccion de variables de herramientas
-def extraccion_herramientas(herramienta):
-    # Pasamos todo el texto en minuscula
-    texto_minuscula = herramienta.lower()
+def guardar_herramientas(herramienta, cantidad, hora):
 
-    pasadas = [p.strip() for p in texto_minuscula.split('.') if p.strip()] # Compresion de lista en python, es primera vez que lo veo
-
-    for i, pasada in enumerate(pasadas, start=1): # enumarate es para ahorrarse el 1 a fuera del bucle, ya que este se asigna en i
-        elementos = [item.strip() for item in pasada.split(',')] # volvemos a ocupar compresion de lista pero para cortar los item y eliminar espacios
-        print(f"Pasada {i}: {elementos}")
-    
     return()
 
 
