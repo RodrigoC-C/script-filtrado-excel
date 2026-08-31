@@ -7,10 +7,9 @@ from dotenv import load_dotenv
 # Cargamos las variables de entorno
 load_dotenv()
 
-#VARIABLE DE ENTORNOS
+# VARIABLE DE ENTORNOS
 archivo_guardado_id = os.getenv("ARCHIVO_GUARDADO_ID")
 excel_analizar = os.getenv("EXCEL_PATH")
-
 
 # Funcion de lectura del ultimo registro
 def lectura_ultimo_registro(nombre_archivo) -> int: 
@@ -48,7 +47,18 @@ def escritura_ultimo_registro(nombre_archivo, id_recorrido, fecha_exacta):
     return()
 
 
+# Lectura de casillas y extraccion de variables de herramientas
+def extraccion_herramientas(herramienta):
+    # Pasamos todo el texto en minuscula
+    texto_minuscula = herramienta.lower()
 
+    pasadas = [p.strip() for p in texto_minuscula.split('.') if p.strip()] # Compresion de lista en python, es primera vez que lo veo
+
+    for i, pasada in enumerate(pasadas, start=1): # enumarate es para ahorrarse el 1 a fuera del bucle, ya que este se asigna en i
+        elementos = [item.strip() for item in pasada.split(',')] # volvemos a ocupar compresion de lista pero para cortar los item y eliminar espacios
+        print(f"Pasada {i}: {elementos}")
+    
+    return()
 
 
 # Ultimo id 
@@ -59,9 +69,43 @@ id_recorrido = lectura_ultimo_registro(archivo_guardado_id)
 df = pd.read_excel(excel_analizar)
 
 # Busqueda de ultimo id 
-fila = df[df['ID'] == id_recorrido]
- 
-print(fila)
+ultimo_id = df[df['ID'] == id_recorrido].index
+
+print(ultimo_id)
+
+if not ultimo_id.empty:
+    indice = ultimo_id[0]
+    # Cortamos la tabla usando iloc: desde la fila siguiente (+1) hasta el final
+    df_nuevos = df.iloc[indice:]
+    print("test 1")
+    print(df_nuevos)
+else:
+    # Si el ID no existe (ej. se borró o es tu primera vez corriendo el script), procesamos todo
+    df_nuevos = df
+
+# 4. El Bucle: Recorremos solo las filas nuevas (reemplaza al While)
+# iterrows() avanza fila por fila manteniendo el "apuntador" automáticamente
+for index, fila in df_nuevos.iterrows():
+    
+    # Extraes las variables específicas de esta fila
+    id_actual = fila['ID']
+    entrada_salida = fila['Entrada o Salida']
+    fecha_ingreso = fila['''Ingrese fecha 
+''']
+    empresa = fila['Empresa Responsable de la Herramienta']
+    persona = fila['Nombre de Persona que ingresa las Herramientas'] # Esta variable puede mantenerse nulo es opcional
+    herramientas = fila['''Ingrese las Herramientas con el siguiente formato: 
+
+Formato: [nombre herramienta, cantidad de herramienta, hora de registro.] 
+
+Ejemplo: cincel, 2, 07:30.                                         ...''']
+    
+    # Aquí es donde llamas a tu función personalizada
+    # resultado = mi_funcion_procesadora(id_actual, variable_a, variable_b)
+    
+    print(f"Procesando nuevo registro: {id_actual}, {entrada_salida}, {fecha_ingreso}, {empresa}, {persona}, {herramientas}")
+
+    extraccion_herramientas(herramientas)
 
 # Capturar el momento exacto de la ejecución
 ahora = dt.now()
@@ -71,4 +115,4 @@ fecha_exacta = ahora.strftime("%d/%m/%Y %H:%M")
 # Id recorrido sumandole 1 (aca se asignara el ultimo registro analizado
 id_recorrido = id_recorrido
 # Ultimo Id que se deja registro en el archivo para no caer en rebundancia
-escritura_ultimo_registro(archivo_guardado_id, id_recorrido, fecha_exacta)
+#escritura_ultimo_registro(archivo_guardado_id, id_recorrido, fecha_exacta)
