@@ -9,8 +9,5 @@ def extraccion_herramientas(herramienta):
     for i, pasada in enumerate(pasadas, start=1): # enumarate es para ahorrarse el 1 a fuera del bucle, ya que este se asigna en i
         elementos = [item.strip() for item in pasada.split(',')] # volvemos a ocupar compresion de lista pero para cortar los item y eliminar espacios
         lista_anidada.append(elementos)
-        print(f"Pasada {i}: {elementos}")
-
-    print(lista_anidada)
     
     return lista_anidada
