@@ -5,6 +5,7 @@ from openpyxl import load_workbook
 from datetime import datetime as dt
 from dotenv import load_dotenv
 from extraccion import extraccion_herramientas
+from procesamiento import transformacion_entrada_salida
 
 # Cargamos las variables de entorno
 load_dotenv()
@@ -51,10 +52,13 @@ def escritura_ultimo_registro(nombre_archivo, id_recorrido, fecha_exacta):
     return()
 
 # ------------------ Abrir y cerrar un excel maestro  -----------------------------------------
-
-def escribir_en_hoja_historial(ruta_archivo, nombre_hoja, lista_diccionario):
+def abrir_excel(ruta_archivo):
     # Abre excel en modo escritura
     excel_archivo = load_workbook(filename=ruta_archivo)
+    return excel_archivo
+
+
+def escribir_en_hoja_historial(excel_archivo, nombre_hoja, lista_diccionario):
     # Escribe un valor en una celda y hoja específicas.
     hoja = excel_archivo[nombre_hoja]
     # Recorres tu lista de diccionarios
@@ -81,6 +85,23 @@ def guardar_y_cerrar(excel_archivo, ruta_archivo):
     excel_archivo.close()
     print("Archivo guardado y cerrado exitosamente.")
 
+def recrear_hoja_stock(excel_archivo, nombre_hoja='Stock Actual'):
+    # 1. Si la hoja YA EXISTE, mantenemos el formato y solo borramos los datos
+    if nombre_hoja in excel_archivo.sheetnames:
+        hoja = excel_archivo[nombre_hoja]
+        
+        # Verificamos que tenga datos debajo de los encabezados
+        if hoja.max_row > 1:
+            # Borramos desde la fila 2 hasta la última fila existente
+            hoja.delete_rows(2, hoja.max_row)
+            
+    # 2. Si la hoja NO EXISTE (ej. primera ejecución), la creamos
+    else:
+        hoja = excel_archivo.create_sheet(title=nombre_hoja)
+        # Agregamos los encabezados por defecto
+        hoja.append(['Nombre Herramienta', 'Empresa', 'Cantidad Total'])
+    
+    return hoja
 
 # ------------------------ Main -------------------------------------
 # Ultimo id 
@@ -126,6 +147,11 @@ Ejemplo: cincel, 2, 07:30.                                    
     # Extraemos las herramientas para iterarla de texto a listas
     herramientas_lista = extraccion_herramientas(herramientas)
 
+    if entrada_salida == "Salida":
+        transformacion_entrada_salida(herramientas_lista)
+    else: 
+        entrada_salida = entrada_salida
+    
     for item in herramientas_lista: 
         diccionario_herramientas = {
             "Fecha Entrada/Salida": fecha_ingreso.strftime("%d/%m/%Y") if fecha_ingreso else None,
@@ -135,19 +161,48 @@ Ejemplo: cincel, 2, 07:30.                                    
             "Cantidad": item[1],
             "Empresa": empresa,
             "Persona (Opcional)": persona if persona else None
-        }
-
+        }  
         # Por cada herramienta creamos un diccionario y lo mandamos agregamos a herramientas 
         lista_diccionario.append(diccionario_herramientas)
 
-# Realizamos el guardado de cada diccionario en la hoja de auditoria 
-excel_modificado = escribir_en_hoja_historial(excel_maestro, hoja_auditoria_maestro, lista_diccionario)
-guardar_y_cerrar(excel_modificado, excel_maestro)
-        
-    
-    
 
-    
+# Abrimos el excel para su escritura
+abrir_excel_maestro = abrir_excel(excel_maestro)
+
+# Realizamos el guardado de cada diccionario en la hoja de auditoria 
+excel_modificado = escribir_en_hoja_historial(abrir_excel_maestro, hoja_auditoria_maestro, lista_diccionario)
+guardar_y_cerrar(excel_modificado, excel_maestro)
+
+
+# ------------------------ Agrupacion y creacion de hoja stock ----------------------------------------
+# Leemos la hoja completa de historial
+df_maestro_historial = pd.read_excel(excel_maestro, sheet_name='Historial')
+
+# Realizamos la agrupacion por nombre y sumamos la cantidad
+df_stock = df_maestro_historial.groupby(['Nombre Herramienta','Empresa'], as_index=False)['Cantidad'].sum()
+
+# Abrimos el excel para su escritura
+abrir_excel_maestro = abrir_excel(excel_maestro)
+
+
+# realizamos la eliminacion de la antigua hoja para empezar de 0
+hoja_stock_nueva = recrear_hoja_stock(abrir_excel_maestro, 'Stock Actual')
+
+for index, fila in df_stock.iterrows():
+    # Armamos una lista simple con los datos de esta fila exacta
+    fila_a_escribir = [
+        fila['Nombre Herramienta'], 
+        fila['Empresa'], 
+        fila['Cantidad']
+    ]
+    # Escribimos la lista en la nueva hoja
+    hoja_stock_nueva.append(fila_a_escribir)
+
+
+guardar_y_cerrar(abrir_excel_maestro, excel_maestro)
+
+
+
 
 # Darle un formato limpio (Día/Mes/Año Hora:Minuto:Segundo)
 fecha_exacta = dt.now().strftime("%d/%m/%Y %H:%M")
@@ -156,3 +211,4 @@ fecha_exacta = dt.now().strftime("%d/%m/%Y %H:%M")
 id_recorrido = id_recorrido
 # Ultimo Id que se deja registro en el archivo para no caer en rebundancia
 escritura_ultimo_registro(archivo_guardado_id, id_recorrido, fecha_exacta)
+
