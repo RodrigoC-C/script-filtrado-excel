@@ -104,67 +104,89 @@ def recrear_hoja_stock(excel_archivo, nombre_hoja='Stock Actual'):
     return hoja
 
 # ------------------------ Main -------------------------------------
-# Ultimo id 
-id_recorrido = lectura_ultimo_registro(archivo_guardado_id)
-# + 1 para el id siguiente
 
-# Lectura del excel
-df = pd.read_excel(excel_analizar)
-
-# Busqueda de ultimo id 
-ultimo_id = df[df['ID'] == id_recorrido].index
-
-if not ultimo_id.empty:
-    indice = ultimo_id[0]
-    # Cortamos la tabla usando iloc: desde la fila siguiente (+1) hasta el final
-    df_nuevos = df.iloc[indice:]
-
-else:
-    # Si el ID no existe (ej. se borró o es tu primera vez corriendo el script), procesamos todo
-    df_nuevos = df
-
+print("--- SISTEMA DE INVENTARIO ---")
+print("1. Ingresar nuevos registros desde Formulario (Excel)")
+print("2. Ingreso Masivo desde Escaneo (JSON)")
+    
+opcion = input("Ingresa el número de tu opción (1 o 2): ").strip()
 
 # Donde guardaremos todos los diccionarios
-lista_diccionario = [] 
+lista_diccionario = []
 
-# 4. El Bucle: Recorremos solo las filas nuevas
-# iterrows() avanza fila por fila manteniendo el "apuntador" automáticamente
-for index, fila in df_nuevos.iterrows():
+if opcion == '1':
+    # Ultimo id 
+    id_recorrido = lectura_ultimo_registro(archivo_guardado_id)
+    # + 1 para el id siguiente
+    id_recorrido = id_recorrido + 1
+    # Lectura del excel
+    df = pd.read_excel(excel_analizar)
+
+    # Busqueda de ultimo id 
+    ultimo_id = df[df['ID'] == id_recorrido].index
+    print(ultimo_id)
+
+    if not ultimo_id.empty:
+        indice = ultimo_id[0]
+        # Cortamos la tabla usando iloc: desde la fila siguiente (+1) hasta el final
+        df_nuevos = df.iloc[indice + 1:]
+
+    else:
+        # Si el ID no existe (ej. se borró o es tu primera vez corriendo el script), procesamos todo
+        df_nuevos = df 
+
+    id_actual = id_recorrido
+    # 4. El Bucle: Recorremos solo las filas nuevas
+    # iterrows() avanza fila por fila manteniendo el "apuntador" automáticamente
+    for index, fila in df_nuevos.iterrows():
+
+        # Extraes las variables específicas de esta fila
+        id_actual = fila['ID']
+        entrada_salida = fila['Entrada o Salida']
+        fecha_ingreso = fila.iloc[7]
+        empresa = fila['Empresa Responsable de la Herramienta']
+        persona = fila['Nombre de Persona que ingresa las Herramientas'] # Esta variable puede mantenerse nulo es opcional
+        herramientas = fila.iloc[10]
+
+        # Extraemos las herramientas para iterarla de texto a listas
+        herramientas_lista = extraccion_herramientas(herramientas)
+
+        if entrada_salida == "Salida":
+            transformacion_entrada_salida(herramientas_lista)
+        else: 
+            entrada_salida = entrada_salida
+
+        for item in herramientas_lista: 
+            diccionario_herramientas = {
+                "Fecha Entrada/Salida": fecha_ingreso.strftime("%d/%m/%Y") if fecha_ingreso else None,
+                "Hora Entrada/Salida":item[2] if item[2] else None,
+                "Nombre Herramienta": item[0],
+                "Entrada/Salida": entrada_salida,
+                "Cantidad": item[1],
+                "Empresa": empresa,
+                "Persona (Opcional)": persona if persona else None
+            }  
+            # Por cada herramienta creamos un diccionario y lo mandamos agregamos a herramientas 
+            lista_diccionario.append(diccionario_herramientas)
+
+    # Darle un formato limpio (Día/Mes/Año Hora:Minuto:Segundo)
+    fecha_exacta = dt.now().strftime("%d/%m/%Y %H:%M")
+    # Id recorrido sumandole 1 (aca se asignara el ultimo registro analizado
+    id_recorrido = id_actual
+    # Ultimo Id que se deja registro en el archivo para no caer en rebundancia
+    escritura_ultimo_registro(archivo_guardado_id, id_recorrido, fecha_exacta)
+
+
+
+elif opcion == '2':
+    print("Test")
+
+
+
+else:
+    print("Opción no válida. Ejecuta el script de nuevo.")
     
-    # Extraes las variables específicas de esta fila
-    id_actual = fila['ID']
-    entrada_salida = fila['Entrada o Salida']
-    fecha_ingreso = fila['''Ingrese fecha 
-''']
-    empresa = fila['Empresa Responsable de la Herramienta']
-    persona = fila['Nombre de Persona que ingresa las Herramientas'] # Esta variable puede mantenerse nulo es opcional
-    herramientas = fila['''Ingrese las Herramientas con el siguiente formato: 
-
-Formato: [nombre herramienta, cantidad de herramienta, hora de registro.] 
-
-Ejemplo: cincel, 2, 07:30.                                         ...''']
-
-    # Extraemos las herramientas para iterarla de texto a listas
-    herramientas_lista = extraccion_herramientas(herramientas)
-
-    if entrada_salida == "Salida":
-        transformacion_entrada_salida(herramientas_lista)
-    else: 
-        entrada_salida = entrada_salida
-    
-    for item in herramientas_lista: 
-        diccionario_herramientas = {
-            "Fecha Entrada/Salida": fecha_ingreso.strftime("%d/%m/%Y") if fecha_ingreso else None,
-            "Hora Entrada/Salida":item[2] if item[2] else None,
-            "Nombre Herramienta": item[0],
-            "Entrada/Salida": entrada_salida,
-            "Cantidad": item[1],
-            "Empresa": empresa,
-            "Persona (Opcional)": persona if persona else None
-        }  
-        # Por cada herramienta creamos un diccionario y lo mandamos agregamos a herramientas 
-        lista_diccionario.append(diccionario_herramientas)
-
+# ------------------------------------------------------------------------------------------------------
 
 # Abrimos el excel para su escritura
 abrir_excel_maestro = abrir_excel(excel_maestro)
@@ -203,12 +225,4 @@ guardar_y_cerrar(abrir_excel_maestro, excel_maestro)
 
 
 
-
-# Darle un formato limpio (Día/Mes/Año Hora:Minuto:Segundo)
-fecha_exacta = dt.now().strftime("%d/%m/%Y %H:%M")
-
-# Id recorrido sumandole 1 (aca se asignara el ultimo registro analizado
-id_recorrido = id_recorrido
-# Ultimo Id que se deja registro en el archivo para no caer en rebundancia
-escritura_ultimo_registro(archivo_guardado_id, id_recorrido, fecha_exacta)
 
