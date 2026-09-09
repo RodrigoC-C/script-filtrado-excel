@@ -1,0 +1,20 @@
+[
+  {
+    "Fecha_Ingreso": "09/09/2026",
+    "Movimiento": "Entrada",
+    "Hora_Entrada/Salida": "08:59",
+    "Herramienta": "sierra circular",
+    "Cantidad": 2,
+    "Empresa": "Constructora Alfa",
+    "Responsable": "Juan Perez"
+  },
+  {
+    "Fecha_Ingreso": "09/09/2026",
+    "Movimiento": "Salida",
+    "Hora_Entrada/Salida": "10:00",
+    "Herramienta": "sierra circular",
+    "Cantidad": 1,
+    "Empresa": "Constructora Alfa",
+    "Responsable": "Juan Perez"
+  }
+]

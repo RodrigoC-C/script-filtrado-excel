@@ -1,6 +1,7 @@
 # This is script for trasnlater and formting text of form to database of the tools on zone FME of Generation-V4
 import os
 import pandas as pd 
+import json
 from openpyxl import load_workbook
 from datetime import datetime as dt
 from dotenv import load_dotenv
@@ -20,6 +21,9 @@ hoja_auditoria_maestro = os.getenv("HOJA_MAESTRO_AUDITORIA")
 
 # Funcion de lectura del ultimo registro
 def lectura_ultimo_registro(nombre_archivo) -> int: 
+    # Si el archivo no existe (primera ejecución), devolvemos 0 
+    if not os.path.exists(nombre_archivo):
+        return 0
     # Leer solo las última línea del archivo Markdown
     with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
         lineas = archivo.read()
@@ -29,7 +33,8 @@ def lectura_ultimo_registro(nombre_archivo) -> int:
 
     # Si el archivo está completamente vacío, evitamos que rompa el programa
     if not registros:
-        raise ValueError(f"⚠️ Error fatal: El archivo '{nombre_archivo}' está vacío o no tiene registros válidos.")
+        return 0
+    
     # Obtener la ultima linea recorrida
     ultimos_registro = registros[-1]
 
@@ -37,7 +42,6 @@ def lectura_ultimo_registro(nombre_archivo) -> int:
     parte_registro = ultimos_registro.split(',')
 
     ultimo_id = int(parte_registro[0])
-    ultima_fecha = parte_registro[1]
 
     return(ultimo_id)
 
@@ -50,6 +54,7 @@ def escritura_ultimo_registro(nombre_archivo, id_recorrido, fecha_exacta):
         archivo.write(guardado_de_id)
     
     return()
+
 
 # ------------------ Abrir y cerrar un excel maestro  -----------------------------------------
 def abrir_excel(ruta_archivo):
@@ -117,8 +122,7 @@ lista_diccionario = []
 if opcion == '1':
     # Ultimo id 
     id_recorrido = lectura_ultimo_registro(archivo_guardado_id)
-    # + 1 para el id siguiente
-    id_recorrido = id_recorrido + 1
+
     # Lectura del excel
     df = pd.read_excel(excel_analizar)
 
@@ -163,13 +167,13 @@ if opcion == '1':
 
         for item in herramientas_lista: 
             diccionario_herramientas = {
-                "Fecha Entrada/Salida": fecha_ingreso.strftime("%d/%m/%Y") if fecha_ingreso else None,
+                "Fecha Entrada/Salida": fecha_ingreso.strftime("%d/%m/%Y") if pd.notnull(fecha_ingreso) else None,
                 "Hora Entrada/Salida":item[2] if item[2] else None,
                 "Nombre Herramienta": item[0],
                 "Entrada/Salida": entrada_salida,
                 "Cantidad": item[1],
                 "Empresa": empresa,
-                "Persona (Opcional)": persona if persona else None
+                "Persona (Opcional)": persona if pd.notnull(persona) else None
             }  
             # Por cada herramienta creamos un diccionario y lo mandamos agregamos a herramientas 
             lista_diccionario.append(diccionario_herramientas)
@@ -191,8 +195,35 @@ if opcion == '1':
 
 
 elif opcion == '2':
-    print("Test")
-
+    print("Iniciando ingreso masivo por JSON...")
+    ruta_json = 'ingreso_masivo.json'
+    
+    if not os.path.exists(ruta_json):
+        print(f"⚠️ Error: No se encontró el archivo '{ruta_json}'.")
+    else:
+        with open(ruta_json, 'r', encoding='utf-8') as archivo:
+            datos_json = json.load(archivo)
+            
+        for item in datos_json:
+            # Extracción y limpieza segura
+            cantidad = int(item.get('Cantidad', 0))
+            movimiento = item.get('Movimiento', 'Entrada')
+            
+            # Lógica matemática para salidas
+            if movimiento.lower() == 'salida':
+                cantidad = cantidad * -1
+                
+            diccionario_herramientas = {
+                "Fecha Entrada/Salida": item.get('Fecha_Ingreso', dt.now().strftime("%d/%m/%Y")),
+                "Hora Entrada/Salida": item.get('Hora_Entrada/Salida').strip().title(), 
+                "Nombre Herramienta": str(item.get('Herramienta', '')).strip().title(),
+                "Entrada/Salida": movimiento.capitalize(),
+                "Cantidad": cantidad,
+                "Empresa": str(item.get('Empresa', '')).strip().title(),
+                "Persona (Opcional)": item.get('Responsable', None)
+            }
+            # Se inyecta en la misma caja universal que usa el Excel
+            lista_diccionario.append(diccionario_herramientas)
 
 
 else:
