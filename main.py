@@ -130,10 +130,15 @@ if opcion == '1':
         indice = ultimo_id[0]
         # Cortamos la tabla usando iloc: desde la fila siguiente (+1) hasta el final
         df_nuevos = df.iloc[indice + 1:]
+        print(df_nuevos)
 
     else:
-        # Si el ID no existe (ej. se borró o es tu primera vez corriendo el script), procesamos todo
-        df_nuevos = df 
+        # Si no encontramos el ID. Puede ser la primera vez (ID 0) o no hay nada nuevo.
+        if id_recorrido == 0:
+            df_nuevos = df # Procesamos todo porque es la primera ejecución
+        else:
+            # Creamos una tabla vacía para que el código sepa que no debe hacer nada
+            df_nuevos = pd.DataFrame(columns=df.columns)
 
     id_actual = id_recorrido
     # 4. El Bucle: Recorremos solo las filas nuevas
@@ -169,12 +174,19 @@ if opcion == '1':
             # Por cada herramienta creamos un diccionario y lo mandamos agregamos a herramientas 
             lista_diccionario.append(diccionario_herramientas)
 
-    # Darle un formato limpio (Día/Mes/Año Hora:Minuto:Segundo)
-    fecha_exacta = dt.now().strftime("%d/%m/%Y %H:%M")
-    # Id recorrido sumandole 1 (aca se asignara el ultimo registro analizado
-    id_recorrido = id_actual
-    # Ultimo Id que se deja registro en el archivo para no caer en rebundancia
-    escritura_ultimo_registro(archivo_guardado_id, id_recorrido, fecha_exacta)
+    # 4. SOLO guardamos un nuevo ID en el MD si realmente procesamos filas nuevas
+    if not df_nuevos.empty:
+        # Extraemos el último ID directamente de la columna para evitar errores con filas en blanco
+        ultimo_id_valido = int(df_nuevos['ID'].dropna().iloc[-1])
+        
+        # Darle un formato limpio (Día/Mes/Año Hora:Minuto:Segundo)
+        fecha_exacta = dt.now().strftime("%d/%m/%Y %H:%M")
+        
+        # Guardamos el ID final
+        escritura_ultimo_registro(archivo_guardado_id, ultimo_id_valido, fecha_exacta)
+        print(f"Registro MD actualizado con éxito. Último ID: {ultimo_id_valido}")
+    else:
+        print("No hay registros nuevos en el formulario. El inventario está al día.")
 
 
 
@@ -220,9 +232,4 @@ for index, fila in df_stock.iterrows():
     # Escribimos la lista en la nueva hoja
     hoja_stock_nueva.append(fila_a_escribir)
 
-
 guardar_y_cerrar(abrir_excel_maestro, excel_maestro)
-
-
-
-
