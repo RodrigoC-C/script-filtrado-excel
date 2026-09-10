@@ -2,6 +2,8 @@
 import os
 import pandas as pd 
 import json
+import shutil
+import glob
 from openpyxl import load_workbook
 from datetime import datetime as dt
 from dotenv import load_dotenv
@@ -16,6 +18,37 @@ archivo_guardado_id = os.getenv("ARCHIVO_GUARDADO_ID")
 excel_analizar = os.getenv("EXCEL_PATH")
 excel_maestro = os.getenv("EXCEL_MAESTRO_PATH")
 hoja_auditoria_maestro = os.getenv("HOJA_MAESTRO_AUDITORIA")
+
+# ------------------ Respaldo excel maestro -----------------------------------------------------------
+def crear_respaldo_rotativo(ruta_maestro, max_respaldos=3):
+    if not os.path.exists(ruta_maestro):
+        return
+
+    # 1. Enrutar a la carpeta "registro" existente en tu proyecto
+    carpeta_respaldos = os.path.join("registro", "Respaldos_Excel")
+    os.makedirs(carpeta_respaldos, exist_ok=True)
+
+    # 2. Extraer solo el nombre del archivo (para no arrastrar rutas de otras carpetas)
+    nombre_base = os.path.basename(ruta_maestro)
+
+    # 3. Crear el nuevo respaldo dentro de la carpeta con la fecha y hora
+    fecha_str = dt.now().strftime("%Y%m%d_%H%M%S")
+    nombre_respaldo = nombre_base.replace(".xlsx", f"_backup_{fecha_str}.xlsx")
+    
+    # os.path.join une la carpeta y el archivo correctamente sin importar si usas Windows o Mac
+    ruta_respaldo = os.path.join(carpeta_respaldos, nombre_respaldo) 
+    
+    shutil.copy(ruta_maestro, ruta_respaldo)
+    print(f"Respaldo de seguridad creado en: {ruta_respaldo}")
+
+    # 4. Buscar y eliminar los respaldos más viejos DENTRO de esa carpeta
+    patron_respaldos = os.path.join(carpeta_respaldos, nombre_base.replace(".xlsx", "_backup_*.xlsx"))
+    lista_respaldos = sorted(glob.glob(patron_respaldos), key=os.path.getmtime)
+
+    while len(lista_respaldos) > max_respaldos:
+        archivo_viejo = lista_respaldos.pop(0) 
+        os.remove(archivo_viejo)
+        print(f"Respaldo antiguo eliminado por limpieza: {archivo_viejo}")
 
 #------------------- Lectura MD registro ---------------------------------------------------------------
 
@@ -119,6 +152,9 @@ opcion = input("Ingresa el número de tu opción (1 o 2): ").strip()
 # Donde guardaremos todos los diccionarios
 lista_diccionario = []
 
+# Realizamos el respaldo maestro
+crear_respaldo_rotativo(excel_maestro, max_respaldos=3)
+
 if opcion == '1':
     # Ultimo id 
     id_recorrido = lectura_ultimo_registro(archivo_guardado_id)
@@ -215,7 +251,7 @@ elif opcion == '2':
                 
             diccionario_herramientas = {
                 "Fecha Entrada/Salida": item.get('Fecha_Ingreso', dt.now().strftime("%d/%m/%Y")),
-                "Hora Entrada/Salida": item.get('Hora_Entrada/Salida').strip().title(), 
+                "Hora Entrada/Salida": item.get('Hora_Entrada/Salida', None), 
                 "Nombre Herramienta": str(item.get('Herramienta', '')).strip().title(),
                 "Entrada/Salida": movimiento.capitalize(),
                 "Cantidad": cantidad,

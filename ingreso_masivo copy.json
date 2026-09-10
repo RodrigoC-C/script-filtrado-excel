@@ -1,5 +1,5 @@
 [
-  {
+    {
     "Fecha_Ingreso": "09/09/2026",
     "Movimiento": "Entrada",
     "Hora_Entrada/Salida": "08:59",
@@ -7,8 +7,8 @@
     "Cantidad": 2,
     "Empresa": "Constructora Alfa",
     "Responsable": "Juan Perez"
-  },
-  {
+    },
+    {
     "Fecha_Ingreso": "09/09/2026",
     "Movimiento": "Salida",
     "Hora_Entrada/Salida": "10:00",
@@ -16,5 +16,6 @@
     "Cantidad": 1,
     "Empresa": "Constructora Alfa",
     "Responsable": "Juan Perez"
-  }
+    }
 ]
+ 

@@ -1,7 +1,15 @@
+# Registro de Excel Maestro y Respaldos
 registro/*
+!registro/*/
 !registro/.gitkeep
-envFME/
+registro/Respaldos_Excel/*
+!registro/Respaldos_Excel/.gitkeep
 
+# Ignorar json normal
+ingreso_masivo.json
+
+# env de python
+envFME/
 .env
 
 
@@ -9,3 +17,7 @@ envFME/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Ignorar configuracion de visual code 
+/.vscode 
+
