@@ -20,7 +20,7 @@ excel_maestro = os.getenv("EXCEL_MAESTRO_PATH")
 hoja_auditoria_maestro = os.getenv("HOJA_MAESTRO_AUDITORIA")
 
 # ------------------ Respaldo excel maestro -----------------------------------------------------------
-def crear_respaldo_rotativo(ruta_maestro, max_respaldos=3):
+def crear_respaldo_rotativo(ruta_maestro):
     if not os.path.exists(ruta_maestro):
         return
 
@@ -41,14 +41,6 @@ def crear_respaldo_rotativo(ruta_maestro, max_respaldos=3):
     shutil.copy(ruta_maestro, ruta_respaldo)
     print(f"Respaldo de seguridad creado en: {ruta_respaldo}")
 
-    # 4. Buscar y eliminar los respaldos más viejos DENTRO de esa carpeta
-    patron_respaldos = os.path.join(carpeta_respaldos, nombre_base.replace(".xlsx", "_backup_*.xlsx"))
-    lista_respaldos = sorted(glob.glob(patron_respaldos), key=os.path.getmtime)
-
-    while len(lista_respaldos) > max_respaldos:
-        archivo_viejo = lista_respaldos.pop(0) 
-        os.remove(archivo_viejo)
-        print(f"Respaldo antiguo eliminado por limpieza: {archivo_viejo}")
 
 #------------------- Lectura MD registro ---------------------------------------------------------------
 
@@ -153,7 +145,7 @@ opcion = input("Ingresa el número de tu opción (1 o 2): ").strip()
 lista_diccionario = []
 
 # Realizamos el respaldo maestro
-crear_respaldo_rotativo(excel_maestro, max_respaldos=3)
+crear_respaldo_rotativo(excel_maestro)
 
 if opcion == '1':
     # Ultimo id 
