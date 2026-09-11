@@ -1,5 +1,5 @@
 import sys
-
+import pandas as pd
 # Transformar de entrada y salida a positivo o negativo
 def transformacion_entrada_salida(herramientas_lista):
     herramientas_lista_nueva = []
@@ -15,4 +15,24 @@ def transformacion_entrada_salida(herramientas_lista):
             sys.exit(1)
 
     return herramientas_lista_nueva
+
+def formatear_herramienta(texto):
+    if pd.isna(texto) or not str(texto).strip():
+        return None
+    return str(texto).strip().lower()
+
+def formatear_empresa(texto):
+    if pd.isna(texto) or not str(texto).strip():
+        return None
+    return str(texto).strip().upper()
+
+def formatear_persona(texto):
+    if pd.isna(texto) or not str(texto).strip():
+        return None
+    return str(texto).strip().title()
+
+def formatear_movimiento(texto):
+    if pd.isna(texto) or not str(texto).strip():
+        return "Entrada" # Por defecto asumimos entrada si viene vacío
+    return str(texto).strip().capitalize()
      

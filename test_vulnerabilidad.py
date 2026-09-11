@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import json
 import os
-from procesamiento import transformacion_entrada_salida
+from procesamiento import transformacion_entrada_salida, formatear_herramienta, formatear_empresa, formatear_persona, formatear_movimiento
 
 class TestVulnerabilidadesSistema(unittest.TestCase):
 
@@ -51,6 +51,33 @@ class TestVulnerabilidadesSistema(unittest.TestCase):
             self.assertTrue(df_stock.empty)
         except Exception as e:
             self.fail(f"El sistema colapsó al agrupar un DataFrame vacío. Error: {e}")
+
+class TestFormateoVariables(unittest.TestCase):
+
+    def test_formatear_herramienta(self):
+        # Mezcla de mayúsculas, minúsculas y espacios
+        self.assertEqual(formatear_herramienta("  SIERRA Circular  "), "sierra circular")
+        self.assertEqual(formatear_herramienta("cincel"), "cincel")
+        self.assertIsNone(formatear_herramienta(None))
+        self.assertIsNone(formatear_herramienta("   "))
+
+    def test_formatear_empresa(self):
+        # Tipeo descuidado
+        self.assertEqual(formatear_empresa(" mDa "), "MDA")
+        self.assertEqual(formatear_empresa("constructora alfa"), "CONSTRUCTORA ALFA")
+        self.assertIsNone(formatear_empresa(None))
+        self.assertIsNone(formatear_empresa(""))
+
+    def test_formatear_persona(self):
+        # Formato de título para nombres
+        self.assertEqual(formatear_persona(" jUan pErez "), "Juan Perez")
+        self.assertEqual(formatear_persona("pedro"), "Pedro")
+        self.assertIsNone(formatear_persona(None))
+
+    def test_formatear_movimiento(self):
+        self.assertEqual(formatear_movimiento(" sAlIdA "), "Salida")
+        self.assertEqual(formatear_movimiento("entrada"), "Entrada")
+        self.assertEqual(formatear_movimiento(None), "Entrada") # Nuestro valor por defecto
 
 if __name__ == '__main__':
     unittest.main()
